@@ -88,13 +88,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\code\ContactListener.cpp" />
     <ClCompile Include="..\..\code\Entity.cpp" />
+    <ClCompile Include="..\..\code\EventSystem.cpp" />
+    <ClCompile Include="..\..\code\InputSystem.cpp" />
     <ClCompile Include="..\..\code\main.cpp" />
+    <ClCompile Include="..\..\code\Platform.cpp" />
     <ClCompile Include="..\..\code\Scene.cpp" />
+    <ClCompile Include="..\..\code\Turret.cpp" />
+    <ClCompile Include="..\..\code\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\code\ContactListener.hpp" />
     <ClInclude Include="..\..\code\Entity.hpp" />
+    <ClInclude Include="..\..\code\EventSystem.hpp" />
+    <ClInclude Include="..\..\code\InputSystem.hpp" />
+    <ClInclude Include="..\..\code\Platform.hpp" />
     <ClInclude Include="..\..\code\Scene.hpp" />
+    <ClInclude Include="..\..\code\Turret.hpp" />
+    <ClInclude Include="..\..\code\Utils.hpp" />
+    <ClInclude Include="..\..\code\Vehicle.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,108 +5,20 @@
 
 #include <memory>
 #include <vector>
-#include <Box2D/Box2D.h>
 #include <SFML/Window.hpp>
 #include <SFML/Graphics.hpp>
+
+#include "Utils.hpp"
+#include "Scene.hpp"
+#include "InputSystem.hpp"
 
 using namespace sf;
 using namespace std;
 
+using namespace GameBox2D;
+
 namespace
 {
-
-    unique_ptr< b2World > create_physics_world ()
-    {
-        // Se crea el mundo físico:
-
-        unique_ptr< b2World > physics_world
-        {
-            new b2World{ b2Vec2{ 0, -10.f } }
-        };
-
-        // CÍRCULO
-        {
-            // Se crea el body a partir de una definición de sus características:
-
-            b2BodyDef body_definition;
-
-            body_definition.type = b2_dynamicBody;
-            body_definition.position.Set (4, 3);                                    // Posición inicial absoluta
-
-            b2Body * body = physics_world->CreateBody (&body_definition);
-
-            // Se añande una fixture al body:
-
-            b2CircleShape body_shape;
-
-            body_shape.m_radius = .5f;
-
-            b2FixtureDef body_fixture;
-
-            body_fixture.shape       = &body_shape;
-            body_fixture.density     = 1.00f;
-            body_fixture.restitution = 0.75f;
-            body_fixture.friction    = 0.50f;
-
-            body->CreateFixture (&body_fixture);
-        }
-
-        // CUADRADO
-        {
-            // Se crea el body a partir de una definición de sus características:
-
-            b2BodyDef body_definition;
-
-            body_definition.type = b2_dynamicBody;
-            body_definition.position.Set (4, 5);                                    // Posición inicial absoluta
-            body_definition.angle = 0.75f;
-
-            b2Body * body = physics_world->CreateBody (&body_definition);
-
-            // Se añande una fixture al body:
-
-            b2PolygonShape body_shape;
-
-            body_shape.SetAsBox (.5f, .5f);
-
-            b2FixtureDef body_fixture;
-
-            body_fixture.shape       = &body_shape;
-            body_fixture.density     = 1.00f;
-            body_fixture.restitution = 0.50f;
-            body_fixture.friction    = 0.50f;
-
-            body->CreateFixture (&body_fixture);
-        }
-
-        // SUELO
-        {
-            // Se crea el body a partir de una definición de sus características:
-
-            b2BodyDef body_definition;
-
-            body_definition.type = b2_staticBody;
-            body_definition.position.Set (0.f, 1.f);                                // Posición inicial absoluta
-            body_definition.angle = 0.f;
-
-            b2Body * body = physics_world->CreateBody (&body_definition);
-
-            // Se añande una fixture al body:
-
-            b2EdgeShape body_shape;
-
-            body_shape.SetTwoSided (b2Vec2(0.f, 1.f), b2Vec2(10, 1.f));             // Coordenadas locales respecto al centro del body
-
-            b2FixtureDef body_fixture;
-
-            body_fixture.shape = &body_shape;
-
-            body->CreateFixture (&body_fixture);
-        }
-
-        return physics_world;
-    }
-
     void render (b2World & physics_world, RenderWindow & window, float scale)
     {
         // Se cachea el alto de la ventana en una variable local:
@@ -197,7 +109,10 @@ namespace
                         sfml_polygon.setPoint
                         (
                             index, 
-                            { box2d_polygon->m_vertices[index].x, box2d_polygon->m_vertices[index].y }
+                            { box2d_polygon->m_vertices[index].x, - box2d_polygon->m_vertices[index].y }
+
+                            // ADVERTENCIA: la y anterior estaba positiva, y dibuja al reves la figuras. El positivo sfml
+                            // no es el mismo que el de box2D por eso hay que darle la vuelta.
                         );
                     }
 
@@ -212,24 +127,22 @@ namespace
             }
         }
     }
-
 }
 
 int main ()
 {
-    RenderWindow window(VideoMode(800, 600), "Box2D Intro", Style::Titlebar | Style::Close, ContextSettings(32));
-
+    RenderWindow window(VideoMode(1500, 540), "Box2D Intro", Style::Titlebar | Style::Close, ContextSettings(32));
     window.setVerticalSyncEnabled (true);
+    
+    unique_ptr<Scene> scene { new Scene(Vec2(0, -10), 100.f)};
+    scene->Start();
 
-    auto  physics_world = create_physics_world ();
-
-    const float physics_to_graphics_scale = 100.f;      // Escala para pasar de unidades de física a unidades de gráficos
+    unique_ptr<InputSystem> inputSystem{ new InputSystem(scene->GetEventSystem(), window) };
 
     const float target_fps  = 60.f;                     // Cuántos fotogramas por segundo se busca conseguir
     const float target_time = 1.f / target_fps;         // Duración en segundos de un fotograma a la tasa deseada
     
     float delta_time = target_time;                     // Previsión de la duración del fotograma actual
-    bool  running    = true;
 
     Clock timer;
 
@@ -237,29 +150,16 @@ int main ()
     {
         timer.restart ();
 
-        // Process window events:
-
-        Event event;
-
-        while (window.pollEvent (event))
-        {
-            if (event.type == Event::Closed)
-            {
-                running = false;
-            }
-        }
-
         // Update:
-
-        physics_world->Step (delta_time, 8, 4);
+        inputSystem->Update();
+        scene      ->Update(delta_time);
 
         // Render:
-
         window.clear ();
-
-        render (*physics_world, window, physics_to_graphics_scale);
-
+        render (scene->GetWorld(), window, scene->physics_to_graphics_scale);
         window.display ();
+
+
 
         // Si resulta necesario se detiene la ejecución unos instantes para no exceder la tasa de
         // fotogramas por segundo deseada:
@@ -275,7 +175,7 @@ int main ()
 
         delta_time = timer.getElapsedTime ().asSeconds ();
     }
-    while (running);
+    while (scene->running);
 
     return EXIT_SUCCESS;
 }
